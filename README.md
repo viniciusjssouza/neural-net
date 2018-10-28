@@ -2,4 +2,12 @@
 
 This repo contains my own Neural Network implementation, used in the Neural Networks discipline. The following techniques were implemented:
 
-- Mult-layer Perceptron with backpropagation;
+Neuron types:
+- Multilayer Perceptron;
+
+Activation Functions:
+- Sigmoid;
+- Step;
+
+Training:
+- Backpropagation;
