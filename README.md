@@ -10,4 +10,4 @@ Activation Functions:
 - Step;
 
 Training:
-- Backpropagation;
+- Back-propagation;
