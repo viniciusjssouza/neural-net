@@ -30,27 +30,34 @@ class MultiLayerPerceptron:
         self._outputs = list(map(lambda neuron: neuron.output, self.layers[-1]))
         return self._outputs
 
-    def back_propagate(self, expected_outputs, learning_rate):
-        deltas = self.back_propagate_output(expected_outputs, learning_rate)
+    def back_propagate(self, expected_outputs, learning_rate, momentum=None):
+        deltas = self.back_propagate_output(expected_outputs, learning_rate, momentum)
         for layer_level in self.backward_hidden_layers():
-            deltas = self.back_propagate_hidden_layer(layer_level, deltas, learning_rate)
+            deltas = self.back_propagate_hidden_layer(layer_level, deltas, learning_rate, momentum)
 
     def backward_hidden_layers(self):
         return range(len(self.layers) - 2, 0, -1)
 
-    def back_propagate_output(self, expected_outputs, learning_rate):
+    def back_propagate_output(self, expected_outputs, learning_rate, momentum):
         deltas = []
         for i in range(0, self.number_of_outputs):
             neuron = self.layers[-1][i]
             derivative = neuron.activation_function.first_derivative(self._outputs[i])
             delta = (expected_outputs[i] - neuron.output) * derivative
             for connection in neuron.input_connections:
-                delta_w = learning_rate * delta * connection.signal()
-                connection.weight += delta_w
+                delta_w = learning_rate * delta * connection.signal() + self.calculate_momentum(connection, momentum)
+                connection.weight = connection.weight - delta_w
             deltas.append(delta)
         return deltas
 
-    def back_propagate_hidden_layer(self, layer_level, next_layer_deltas, learning_rate):
+    def calculate_momentum(self, connection, momentum_factor):
+        if momentum_factor:
+            prev_weight = connection.previous_weight or connection.weight
+            return momentum_factor * (connection.weight - prev_weight)
+        else:
+            return 0
+
+    def back_propagate_hidden_layer(self, layer_level, next_layer_deltas, learning_rate, momentum):
         deltas = []
         for neuron in self.layers[layer_level]:
             derivative = neuron.activation_function.first_derivative(neuron.output)
@@ -58,8 +65,8 @@ class MultiLayerPerceptron:
             deltas_sum = sum(np.multiply(next_layer_deltas, output_connections_weights))
             delta = derivative * deltas_sum
             for connection in neuron.input_connections:
-                delta_w = learning_rate * delta * connection.signal()
-                connection.weight += delta_w
+                delta_w = learning_rate * delta * connection.signal() + self.calculate_momentum(connection, momentum)
+                connection.weight = connection.weight + delta_w
             deltas.append(delta)
         return deltas
 

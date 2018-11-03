@@ -9,7 +9,7 @@ class Sigmoid:
 
     @staticmethod
     def first_derivative(x):
-        return Sigmoid.apply(x) * (1 - Sigmoid.apply(x))
+        return x * (1 - x)
 
 
 
