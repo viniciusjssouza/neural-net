@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 
 from neuralnet.perceptron import Perceptron
@@ -19,7 +21,8 @@ class MultiLayerPerceptron:
 
     def feed_forward(self, inputs):
         if len(inputs) != self.number_of_inputs:
-            raise ValueError('Invalid number of inputs. Number of inputs configured: {}'.format(self.number_of_inputs))
+            raise ValueError('Invalid number of inputs. Number of inputs configured: {}  Inputs provided: {}'
+                             .format(self.number_of_inputs, len(inputs)))
         for i in range(0, len(inputs)):
             self.layers[0][i].output = inputs[i]
 
@@ -72,6 +75,15 @@ class MultiLayerPerceptron:
 
     def outputs(self):
         return self._outputs
+
+    def sum_squared_weights(self):
+        # skip the input layer
+        total = 0
+        for layer in range(1, len(self.layers)):
+            for neuron in self.layers[layer]:
+                for conn in neuron.input_connections:
+                    total += (conn.weight * conn.weight)
+        return total
 
     def _create_input_layer(self):
         input_layer = []
