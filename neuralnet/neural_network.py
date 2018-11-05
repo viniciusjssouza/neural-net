@@ -2,15 +2,17 @@ import itertools
 
 import numpy as np
 
+from neuralnet.activation_function import Sigmoid
 from neuralnet.perceptron import Perceptron
 
 
 class MultiLayerPerceptron:
 
-    def __init__(self, neurons_per_layer, number_of_inputs, number_of_outputs):
+    def __init__(self, neurons_per_layer, number_of_inputs, number_of_outputs, activation_function=Sigmoid):
         self.layers = []
         self.number_of_inputs = number_of_inputs
         self.number_of_outputs = number_of_outputs
+        self.activation_function = activation_function
         self._outputs = []
 
         self.layers.append(self._create_input_layer())
@@ -43,9 +45,9 @@ class MultiLayerPerceptron:
 
     def back_propagate_output(self, expected_outputs, learning_rate, momentum):
         deltas = []
-        for i in range(0, self.number_of_outputs):
+        for i in range(self.number_of_outputs):
             neuron = self.layers[-1][i]
-            derivative = neuron.activation_function.first_derivative(self._outputs[i])
+            derivative = neuron.activation_function.first_derivative(neuron.output)
             delta = (expected_outputs[i] - neuron.output) * derivative
             for connection in neuron.input_connections:
                 delta_w = learning_rate * delta * connection.signal() + self.calculate_momentum(connection, momentum)
@@ -63,9 +65,9 @@ class MultiLayerPerceptron:
     def back_propagate_hidden_layer(self, layer_level, next_layer_deltas, learning_rate, momentum):
         deltas = []
         for neuron in self.layers[layer_level]:
-            derivative = neuron.activation_function.first_derivative(neuron.output)
             output_connections_weights = [out_conn.weight for out_conn in neuron.output_connections]
             deltas_sum = sum(np.multiply(next_layer_deltas, output_connections_weights))
+            derivative = neuron.activation_function.first_derivative(neuron.output)
             delta = derivative * deltas_sum
             for connection in neuron.input_connections:
                 delta_w = learning_rate * delta * connection.signal() + self.calculate_momentum(connection, momentum)
@@ -88,14 +90,14 @@ class MultiLayerPerceptron:
     def _create_input_layer(self):
         input_layer = []
         for i in range(0, self.number_of_inputs):
-            perceptron = Perceptron(layer=0)
+            perceptron = Perceptron(layer=0, activation_function=self.activation_function)
             input_layer.append(perceptron)
         return input_layer
 
     def _create_output_layer(self):
         output_layer = []
         for i in range(0, self.number_of_outputs):
-            perceptron = Perceptron(layer=len(self.layers))
+            perceptron = Perceptron(layer=len(self.layers), activation_function=self.activation_function)
             output_layer.append(perceptron)
             self._connect_neuron(perceptron)
         return output_layer
@@ -103,7 +105,7 @@ class MultiLayerPerceptron:
     def _create_layer(self, layer_level, number_of_neurons):
         layer = []
         for i in range(0, number_of_neurons):
-            perceptron = Perceptron(layer=layer_level)
+            perceptron = Perceptron(layer=layer_level, activation_function=self.activation_function)
             layer.append(perceptron)
             self._connect_neuron(perceptron)
         return layer
