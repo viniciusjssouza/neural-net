@@ -1,6 +1,6 @@
 import numpy as np
 
-from neuralnet.cost_function import SquaredError
+from perceptron.cost_function import SquaredError
 
 
 class Training:

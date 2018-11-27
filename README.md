@@ -5,6 +5,7 @@ The following configurations are supported:
 
 Neuron types:
 - Multilayer Perceptron;
+- Kohonen Maps / Self-organizing Maps;
 
 Activation Functions:
 - Sigmoid;
@@ -12,6 +13,7 @@ Activation Functions:
 
 Training:
 - Back-propagation;
+- Competitive learning;
 
 Supported Techniques:
 - Weight regularization;

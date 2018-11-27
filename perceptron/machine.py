@@ -3,24 +3,16 @@ from matplotlib import pyplot
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
-from utils.illustrator import Illustrator
 from perceptron.neural_network import MultiLayerPerceptron
 from perceptron.training import Training, HyperParameters
 
 scaler = MinMaxScaler()
+output_scaler = MinMaxScaler()
 training = None
 MSE_PLOT = 1
-ACCURACY_PLOT = 2
+RELATIVE_ERROR_PLOT = 2
 MSE_REGULARIZATION = 3
-NUMBER_OF_INPUTS = 13
-NUMBER_OF_OUTPUTS = 3
-MAX_EPOCHS = 2
-TRAINING_ITERATIONS = 2
 
-# extend print area
-pd.set_option('display.max_rows', 500)
-pd.set_option('display.max_columns', 500)
-pd.set_option('display.width', 1000)
 
 # ==========================================================================
 # Helper Functions
@@ -28,17 +20,17 @@ pd.set_option('display.width', 1000)
 def run_model(train, test, hyperparameters, training_iterations=1):
     global training
 
-    network = MultiLayerPerceptron([25], number_of_inputs=NUMBER_OF_INPUTS, number_of_outputs=NUMBER_OF_OUTPUTS)
-    Illustrator(network).draw()
-    accuracies = []
+    network = MultiLayerPerceptron([10], number_of_inputs=6, number_of_outputs=1)
+
+    relative_error = []
     training = None
     for it in range(0, training_iterations):
         run_training(network, train, hyperparameters)
-        accuracies.append(validate(network, train))
-
-    print(validate(network, test))  # print the accuracy on the test set
+        relative_error.append(validate(network, train))
+    errors = output_scaler.inverse_transform(relative_error)
+    print(output_scaler.inverse_transform([validate(network, test)]))  # print the mean error on the test set
     plot_mse(hyperparameters)
-    plot_accuracy(accuracies, hyperparameters)
+    plot_relative_error(errors, hyperparameters)
 
 
 def plot_mse(hyperparameters):
@@ -51,22 +43,23 @@ def plot_mse(hyperparameters):
     pyplot.xlabel('Epoch')
 
 
-def plot_accuracy(accuracies, hyperparameters):
+def plot_relative_error(relative_errors, hyperparameters):
     plot_options = get_plot_options(hyperparameters)
-    label = "Accuracy - {}".format(plot_options['label'])
-    pyplot.figure(ACCURACY_PLOT)
-    pyplot.plot(accuracies, "{}-+".format(plot_options['color']), linewidth=1, label=label)
+    label = "Relative Error - {}".format(plot_options['label'])
+    pyplot.figure(RELATIVE_ERROR_PLOT)
+    pyplot.plot(relative_errors, "{}-+".format(plot_options['color']), linewidth=1, label=label)
     pyplot.legend(loc='best')
     pyplot.xlabel('Training Session ({} epochs)'.format(hyperparameters.max_epochs))
 
 
 def get_input(dataset):
     inputs = scaler.transform(dataset)
-    return [row[:13] for row in inputs]
+    return [row[:6] for row in inputs]
 
 
 def get_output(dataset):
-    return [row[13:].values for index, row in dataset.iterrows()]
+    outputs = scaler.transform(dataset)
+    return [[row[6]] for row in outputs]
 
 
 def run_training(network, dataset, hyperparameters):
@@ -82,54 +75,47 @@ def run_training(network, dataset, hyperparameters):
 
 def get_plot_options(hyperparameters):
     if hyperparameters.momentum is not None:
-        return {'color': 'b', 'label': 'Vinhos com termo de Momentum'}
+        return {'color': 'b', 'label': 'Machine Benchmark com termo de Momentum'}
     elif hyperparameters.regularization_parameter is not None:
-        return {'color': 'g', 'label': 'Vinhos com regularização'}
+        return {'color': 'g', 'label': 'Machine Benchmark com regularização'}
     else:
-        return {'color': 'r', 'label': 'Vinhos'}
+        return {'color': 'r', 'label': 'Machine Benchmark'}
 
 
 def validate(network, dataset):
     inputs, expected_outputs = get_input(dataset), get_output(dataset)
-    success = 0
-    for i in range(0, len(inputs)):
-        network_output = network.feed_forward(inputs[i])
-        max_val = max(network_output)
-        output = [1 if val == max_val else 0 for val in network_output]
-        print("Output: {}    Expected Output: {}".format(output, expected_outputs[i]))
-        if output == expected_outputs[i].tolist():
-            success += 1
-    return success * 100 / len(inputs)
+    outputs = [network.feed_forward(row)[0] for row in inputs]
+    expected_outputs = [out[0] for out in expected_outputs]
 
+    relative_errors = []
+    for output, expected_output in zip(outputs, expected_outputs):
+        print("Output: {}    Expected: {}".format(output, expected_output))
+        error = abs(output-expected_output)
+        relative_errors.append(error)
+    return [pd.np.mean(relative_errors)]
 
 # ==========================================================================
 # Main script
 # ==========================================================================
+COLUMNS_OF_INTEREST = ['myct','mmin','mmax','cach','chmin','chmax','erp']
+data = pd.read_csv('datasets/machine.csv')
 
-data = pd.read_csv('datasets/winequality-red.csv')
-
-for i in range(1, 4):
-    data[str(i)] = 0
-
-for i in range(1,4):
-    data.loc[data['type'] == i, str(i)] = 1
-
-
-# remove class column
-data = data.loc[:, data.columns != 'type']
+# convert classes to numeric values
+data = data[COLUMNS_OF_INTEREST]
 
 # scale dataset input
 scaler.fit(data)
+output_scaler.fit(data[["erp"]].values)
 
 # split dataset into training and validation
 train, test = train_test_split(data, test_size=0.2)
 
 hyperparameters = HyperParameters(
-    learning_rate=0.25,
-    error_tolerance=0.1,
-    max_epochs=MAX_EPOCHS
+    learning_rate=5,
+    error_tolerance=1e-5,
+    max_epochs=20
 )
-
+TRAINING_ITERATIONS = 50
 run_model(train, test, hyperparameters, training_iterations=TRAINING_ITERATIONS)
 
 # run again with momentum term
@@ -143,5 +129,6 @@ run_model(train, test, hyperparameters, training_iterations=TRAINING_ITERATIONS)
 pyplot.figure(MSE_PLOT)
 pyplot.show()
 
-pyplot.figure(ACCURACY_PLOT)
+pyplot.figure(RELATIVE_ERROR_PLOT)
 pyplot.show()
+

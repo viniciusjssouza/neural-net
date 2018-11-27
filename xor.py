@@ -1,7 +1,7 @@
 from matplotlib import pyplot
 
-from neuralnet.neural_network import MultiLayerPerceptron
-from neuralnet.training import Training, HyperParameters
+from perceptron.neural_network import MultiLayerPerceptron
+from perceptron.training import Training, HyperParameters
 
 
 def run_training(network, hyperparameters):

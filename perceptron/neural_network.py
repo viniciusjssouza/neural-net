@@ -2,8 +2,8 @@ import itertools
 
 import numpy as np
 
-from neuralnet.activation_function import Sigmoid
-from neuralnet.perceptron import Perceptron
+from perceptron.activation_function import Sigmoid
+from perceptron.perceptron import Perceptron
 
 
 class MultiLayerPerceptron:

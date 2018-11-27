@@ -1,7 +1,7 @@
 import numpy as np
 
-from neuralnet.connection import *
-from neuralnet.activation_function import Sigmoid
+from perceptron.connection import *
+from perceptron.activation_function import Sigmoid
 
 import random, string
 

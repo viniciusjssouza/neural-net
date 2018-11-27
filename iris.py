@@ -3,9 +3,8 @@ from matplotlib import pyplot
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
-from neuralnet.illustrator import Illustrator
-from neuralnet.neural_network import MultiLayerPerceptron
-from neuralnet.training import Training, HyperParameters
+from perceptron.neural_network import MultiLayerPerceptron
+from perceptron.training import Training, HyperParameters
 
 scaler = MinMaxScaler()
 training = None
