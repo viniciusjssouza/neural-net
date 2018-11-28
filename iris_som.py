@@ -3,52 +3,42 @@ from matplotlib import pyplot
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
-from perceptron.neural_network import MultiLayerPerceptron
-from perceptron.training import Training, HyperParameters
+from som.kohonen import KohonenMap, ExponentialLearning, Training
 
 scaler = MinMaxScaler()
 training = None
-MSE_PLOT = 1
-ACCURACY_PLOT = 2
-MSE_REGULARIZATION = 3
+ROWS = 10
+COLS = 10
+MAX_ITERATIONS = 10
+INITIAL_NEIGHBOURHOOD = 5
+INITIAL_LEARNING_RATE = 5
+
+
+class TrainingListener:
+
+    def before_epoch(self, epoch, map):
+        print("======= Epoch {} =======".format(epoch))
+
+    def after_epoch(self, epoch, distances, winner_pos):
+        pass
+        print("Winner: {}".format(winner_pos))
 
 
 # ==========================================================================
 # Helper Functions
 # ==========================================================================
-def run_model(train, test, hyperparameters, training_iterations=1):
+def run_model(train, test):
     global training
 
-    network = MultiLayerPerceptron([6], number_of_inputs=4, number_of_outputs=3)
-
-    accuracies = []
-    training = None
-    for it in range(0, training_iterations):
-        run_training(network, train, hyperparameters)
-        accuracies.append(validate(network, train))
-
-    print(validate(network, test))  # print the accuracy on the test set
-    plot_mse(hyperparameters)
-    plot_accuracy(accuracies, hyperparameters)
-
-
-def plot_mse(hyperparameters):
-    plot_options = get_plot_options(hyperparameters)
-    label = "Cost - {}".format(plot_options['label'])
-    figure = MSE_PLOT if hyperparameters.regularization_parameter is None else MSE_REGULARIZATION
-    pyplot.figure(figure)
-    pyplot.plot(training.errors, "{}-+".format(plot_options['color']), linewidth=1, label=label)
-    pyplot.legend(loc='best')
-    pyplot.xlabel('Epoch')
-
-
-def plot_accuracy(accuracies, hyperparameters):
-    plot_options = get_plot_options(hyperparameters)
-    label = "Accuracy - {}".format(plot_options['label'])
-    pyplot.figure(ACCURACY_PLOT)
-    pyplot.plot(accuracies, "{}-+".format(plot_options['color']), linewidth=1, label=label)
-    pyplot.legend(loc='best')
-    pyplot.xlabel('Training Session ({} epochs)'.format(hyperparameters.max_epochs))
+    map = KohonenMap(rows=10, cols=10, num_features=4)
+    learning_strategy = ExponentialLearning(
+        map=map,
+        max_iterations=MAX_ITERATIONS,
+        initial_neighbourhood_size=INITIAL_NEIGHBOURHOOD,
+        initial_learning_rate=INITIAL_LEARNING_RATE
+    )
+    training = Training(map, train.values, learning_strategy, TrainingListener())
+    training.run()
 
 
 def get_input(dataset):
@@ -99,14 +89,6 @@ def validate(network, dataset):
 
 data = pd.read_csv('datasets/iris.csv')
 
-# convert classes to numeric values
-data['virginica'] = 0
-data['versicolor'] = 0
-data['setosa'] = 0
-data.loc[data['class'] == 'Iris-virginica', 'virginica'] = 1
-data.loc[data['class'] == 'Iris-versicolor', 'versicolor'] = 1
-data.loc[data['class'] == 'Iris-setosa', 'setosa'] = 1
-
 # remove class column
 data = data.loc[:, data.columns != 'class']
 
@@ -116,24 +98,6 @@ scaler.fit(data)
 # split dataset into training and validation
 train, test = train_test_split(data, test_size=0.2)
 
-hyperparameters = HyperParameters(
-    learning_rate=1,
-    error_tolerance=0.01,
-    max_epochs=10
-)
 
-run_model(train, test, hyperparameters, training_iterations=10)
+run_model(train, test)
 
-# run again with momentum term
-hyperparameters.momentum = 0.8
-run_model(train, test, hyperparameters, training_iterations=10)
-
-hyperparameters.momentum = None
-hyperparameters.regularization_parameter = 1
-run_model(train, test, hyperparameters, training_iterations=10)
-
-pyplot.figure(MSE_PLOT)
-pyplot.show()
-
-pyplot.figure(ACCURACY_PLOT)
-pyplot.show()

@@ -8,13 +8,13 @@ class KohonenMap:
         self.rows = rows
         self.cols = cols
 
-    def get_winner_pos(self, input_data, distances):
-        return np.unravel_index(distances.argmax(), distances.shape)
+    def get_winner_pos(self, distances):
+        return np.unravel_index(distances.argmin(), distances.shape)
 
     def calculate_distances(self, input_data):
-        distances = np.zeros(self.rows, self.cols)
-        for i in range(0, len(self.rows)):
-            for k in range(0, len(self.cols)):
+        distances = np.zeros([self.rows, self.cols])
+        for i in range(0, self.rows):
+            for k in range(0, self.cols):
                 distances[i][k] = np.linalg.norm(np.subtract(self.weights[i][k], input_data))
         return distances
 
@@ -34,8 +34,9 @@ class ExponentialLearning:
         learning_rate = self.calc_learning_rate(epoch)
         neighbourhood_size = self.calc_topological_neighbourhood(epoch, winner_pos, current_pos)
         constant_factor = learning_rate * neighbourhood_size
-        delta = np.subtract(input_data, self.map.weights[current_pos[0]][current_pos[1]])
-        self.map.weights[current_pos[0]][current_pos[1]] = np.multiply(constant_factor, delta)
+        diff = np.subtract(input_data, self.map.weights[current_pos[0]][current_pos[1]])
+        delta = np.multiply(constant_factor, diff)
+        self.map.weights[current_pos[0]][current_pos[1]] = np.add(self.map.weights[current_pos[0]][current_pos[1]], delta)
 
     def calc_learning_rate(self, epoch):
         return self.initial_learning_rate * np.exp(-epoch / self.max_iterations)
@@ -63,7 +64,7 @@ class Training:
         self.listener = listener
 
     def run(self):
-        for epoch in range(0, self.learning_strategy.max_iterations):
+        for epoch in range(1, self.learning_strategy.max_iterations):
             if self.listener:
                 self.listener.before_epoch(epoch, map)
 
@@ -73,14 +74,8 @@ class Training:
     def compete(self, epoch, input_data):
         distances = self.map.calculate_distances(input_data)
         winner_pos = self.map.get_winner_pos(distances)
-        for i in range(0, len(self.map.rows)):
-            for k in range(0, len(self.map.cols)):
+        for i in range(0, self.map.rows):
+            for k in range(0, self.map.cols):
                 self.learning_strategy.calc_new_weights(epoch, input_data, winner_pos, (i, k))
-        self.listener.after_epoch(epoch, distances, winner_pos)
-
-    def calculate_distances(self, input_data):
-        distances = np.zeros(self.map.rows, self.map.cols)
-        for i in range(0, len(self.map.rows)):
-            for k in range(0, len(self.map.cols)):
-                distances[i][k] = np.linalg.norm(np.subtract(self.map.weights[i][k], input_data))
-        return distances
+        if self.listener:
+            self.listener.after_epoch(epoch, distances, winner_pos)
