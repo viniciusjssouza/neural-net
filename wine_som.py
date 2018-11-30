@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import somoclu
 from matplotlib import pyplot
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
 from som.kohonen import KohonenMap, ExponentialLearning, Training, LinearLearning
@@ -10,7 +11,7 @@ scaler = MinMaxScaler()
 ROWS = 3
 COLS = 3
 MAX_ITERATIONS = 50
-NUM_FEATURES = 4
+NUM_FEATURES = 13
 
 
 class TrainingListener:
@@ -51,20 +52,24 @@ def run_training(data, map, learning_strategy):
 # Main script
 # ==========================================================================
 
-data = pd.read_csv('datasets/iris.csv')
+data = pd.read_csv('datasets/winequality-red.csv')
 
 # remove class column
-data = data.loc[:, data.columns != 'class']
+data = data.loc[:, data.columns != 'type']
+
+# scale dataset input
+scaler.fit(data)
+
 
 ## Exponential
 map = KohonenMap(rows=ROWS, cols=COLS, num_features=NUM_FEATURES)
 exponential_learning = ExponentialLearning(
     map=map,
-    learning_decay=0.2 * MAX_ITERATIONS,
-    neighbourhood_decay=0.2 * MAX_ITERATIONS,
+    learning_decay=0.25 * MAX_ITERATIONS,
+    neighbourhood_decay=0.1 * MAX_ITERATIONS,
     max_iterations=MAX_ITERATIONS,
-    initial_neighbourhood_size=3,
-    initial_learning_rate=0.1
+    initial_neighbourhood_size=0.1,
+    initial_learning_rate=0.2
 )
 run_training(data, map, exponential_learning)
 
@@ -73,7 +78,7 @@ map = KohonenMap(rows=ROWS, cols=COLS, num_features=NUM_FEATURES)
 linear_learning = LinearLearning(
     map=map,
     initial_learning_rate=0.001,
-    neighbourhood_radius=4,
+    neighbourhood_radius=1,
     max_iterations=MAX_ITERATIONS
 )
 run_training(data, map, linear_learning)
