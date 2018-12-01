@@ -46,7 +46,7 @@ linearLearning = LinearLearning(
     neighbourhood_decay=1.05,
     max_iterations=MAX_ITERATIONS,
     initial_neighbourhood_size=20,
-    initial_learning_rate=0.05
+    initial_learning_rate=0.005
 )
 changes = {
     'learning_decay': [0.8, 1.05, 1.2],
@@ -56,5 +56,5 @@ changes = {
 }
 map = KohonenMap(rows=ROWS, cols=COLS, num_features=NUM_FEATURES)
 experiment2 = Experiment(data, map, linearLearning, changes)
-#experiment2.run_all()
+experiment2.run_all()
 
